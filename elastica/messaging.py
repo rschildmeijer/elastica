@@ -16,7 +16,7 @@ from afd import AccrualFailureDetector
 from gossip import Gossiper
 
 define("port", type=int, help="Port to bind for internal messaging", default=14922)
-define("address", type=str, help="Address to bind for internal messaging", default="127.0.0.1")
+define("address", type=str, help="Address to bind for internal messaging", default="localhost")
 define("seed", type=str, help="Seed for bootstrapping")
 
 class Messaging:
@@ -47,17 +47,20 @@ class Messaging:
         stream = IOStream(connection)
         self._sockets.append(connection)
         self._streams[connection] = stream
-        ccb = functools.partial(self._handle_close, socket) #same as: cb =  lambda : self._handle_close(connection)
+
+        ccb = functools.partial(self._handle_close, connection) #same as: cb =  lambda : self._handle_close(connection)
         stream.set_close_callback(ccb)
-        #stream.read_until(callback=self._handle_read, delimiter="\r\n")
+
+        stream.read_until("\r\n", functools.partial(self._handle_read, connection))
 
     def _handle_close(self, socket):
         print "_handle_close"
         #TODO cleanup + start reconnect logic
 
-    def _handle_read(self, data):
+    def _handle_read(self, socket, data):
         print "_handle_read"
         print data
+        print socket.getpeername()
 
     def _connect_to_seed(self):
         print "connecting to seed..."
