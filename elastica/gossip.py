@@ -48,9 +48,12 @@ class Gossiper(object):
         #TODO gossip step 3
 
     def _scrutinize_cluster(self):
+        print "dead nodes: " + str(self._dead_nodes)
+        print "alive nodes: " + str(self._alive_nodes)
         print "scrutinize cluster"
         dead = [host for host in self._alive_nodes if self._fd.isDead(host)]
         if len(dead) > 0:
+            print "found dead nodes: " + str(dead)
             [self._dead_nodes.append(node) for node in dead]
             [self._alive_nodes.remove(node) for node in dead]
             [self._notify_on_dead(node) for node in dead]
@@ -67,13 +70,13 @@ class Gossiper(object):
             #digest = {"generation":1, "version": 33}
             if host in self._node_states:
                 #has digest about host, maybe update
-                if gossip["generation"] > self._node_states[host]["generation"]:
+                if digest["generation"] > self._node_states[host]["generation"]:
                     self._update_node_state(host, digest)
-                elif gossip["version"] > self._node_states[host]["version"]: #should probably make sure that generations are eq
+                elif digest["version"] > self._node_states[host]["version"]: #should probably make sure that generations are eq
                     self._update_node_state(host, digest)
             else:
                 #had no previous info about host
-                print "new node discovered"
+                print "new node discovered: %s" % host
                 self._node_states[host] = digest
                 self._fd.heartbeat(host)
                 if host not in self._alive_nodes:   #could be gossip about seed which could already be in alive_nodes
@@ -86,6 +89,7 @@ class Gossiper(object):
         if host in self._dead_nodes:
             self._dead_nodes.remove(host)
             self._alive_nodes.append(host)
+            self._notify_on_alive(host)
 
     def _notify_on_join(self, host):
         print "notifying node state change listeners, on_join(%s)" % host

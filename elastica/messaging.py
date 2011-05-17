@@ -52,8 +52,8 @@ class MessagingService:
 
     def _handle_read(self, host, data):
         print "_handle_read"
-        #TODO need to trim (remove \r\n) data?
-        self._gossiper.new_gossip(ast.literal_eval(data), host)
+        self._gossiper.new_gossip(ast.literal_eval(data.rstrip()), host)
+        self._streams[host].read_until("\r\n", functools.partial(self._handle_read, host))
 
     def _connect_to_node(self, host, data=None):
         print "connecting to host: %s" % host
@@ -64,6 +64,7 @@ class MessagingService:
             stream = IOStream(sock, io_loop=ioloop.IOLoop.instance())
             self._streams[host] = stream
             stream.set_close_callback(functools.partial(self._handle_close, host))
+            self._streams[host].read_until("\r\n", functools.partial(self._handle_read, host))
             if data:
                 stream.write(data)
         except socket.error, e:
