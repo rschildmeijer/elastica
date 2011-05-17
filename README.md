@@ -4,7 +4,8 @@ Elastica is an implementation of:  [The Phi Accrual Failure Detector] and [Amazo
 [Amazons paper on Gossip]: http://www.cs.cornell.edu/home/rvr/papers/flowgossip.pdf
 
 
-Limitations:
+    Limitations:
+    
     * All nodes in the cluster must listen on the same port.
 
     * One node per ip.
