@@ -50,6 +50,7 @@ class AccrualFailureDetector(object):
 
     def phi(self, host, timestamp=None):
         if not self._hosts[host]:
+        #if not self._hosts.has_key(host):
             return 0
         ts = timestamp
         if ts is None:
@@ -63,6 +64,3 @@ class AccrualFailureDetector(object):
 
     def isDead(self, host):
         return not self.isAlive(host)
-
-    def reconcile(self):
-        print "impls"

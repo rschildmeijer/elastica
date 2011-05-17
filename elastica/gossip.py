@@ -1,6 +1,5 @@
+import time
 import random
-import math
-import tornado.web
 from tornado import ioloop
 from tornado.options import options
 from tornado.ioloop import PeriodicCallback
@@ -21,50 +20,72 @@ class Gossiper(object):
          gossip to random seed with certain probability depending on number of unreachable, seed and live nodes."""
 
 
-    def __init__(self, fd):
+    def __init__(self, fd, ms):
         self._fd = fd
-        self._node_states = {}
-        self._alive_nodes = [] #maybe a set() would be more appropriate?
+        self._ms = ms
+        self._node_states = {}  #does not contain gossip digest about the local node
+        self._alive_nodes = []
+        if options.address != options.seed:
+            self._alive_nodes.append(options.seed)
+            self._fd.heartbeat(options.seed) #could be dangerous
         self._dead_nodes = []
         self._node_state_change_listeners = []  #on_join(host), on_alive(host), on_dead(host)
-        self._generation = random.randint(1, math.pow(2, 32))
+        self._generation = int(time.time())
         self._version = 1
-        self._local_node = options.address
 
         PeriodicCallback(self._initiate_gossip_exchange, 1000, ioloop.IOLoop.instance()).start()
         PeriodicCallback(self._scrutinize_cluster, 1000, ioloop.IOLoop.instance()).start()
 
     def _initiate_gossip_exchange(self):
-        print "sending gossip"
+        if len(self._alive_nodes) > 0:
+            node = random.choice(self._alive_nodes)
+            print "sending gossip [generation:%s, version:%s] to: %s" % (self._generation, self._version, node)
+            gossip = self._node_states.copy()
+            gossip[options.address] = {"generation": self._generation, "version": self._version}
+            self._ms.send_gossip(node, str(gossip) + "\r\n")
+            self._version +=1
+        #TODO gossip step 2
+        #TODO gossip step 3
 
     def _scrutinize_cluster(self):
         print "scrutinize cluster"
-
-#    def add_node(self, host):
-#        """ Invoked by the MessagingService when a new node has connected to me """
-#        if host not in self._alive_nodes:
-#            self._alive_nodes.append(host)
-#        if host in self._dead_nodes:
-#            self._dead_nodes.remove(host)
-#            self._notify_on_alive(host)
-#        else:
-#            self._notify_on_join(host)
-#        self._fd.heartbeat(host)
-
-#    def remove_node(self, host):
-#        """ Invoked by the MessagingService when we lose the connection to a node """
-#        if host in self._alive_nodes:
-#            print "node %s: alive -> dead" % host
-#            self._alive_nodes.remove(host)
-#            self._dead_nodes.append(host)
-#            self._notify_on_dead(host)
-#        else:
-#            print "trying to remove a node that has already been marked as dead, glitch?"
-
+        dead = [host for host in self._alive_nodes if self._fd.isDead(host)]
+        if len(dead) > 0:
+            [self._dead_nodes.append(node) for node in dead]
+            [self._alive_nodes.remove(node) for node in dead]
+            [self._notify_on_dead(node) for node in dead]
 
     def new_gossip(self, gossip, sender):
         """ Invoked by the MessagingService when we receive gossip from another node in the cluster """
         print "%s sent gossip: %s" % (sender, gossip)
+        #gossip will contain info about me
+        if options.address in gossip:
+            del gossip[options.address]
+        for host in gossip.keys():
+            digest = gossip[host]
+            #host="192.168.0.1"
+            #digest = {"generation":1, "version": 33}
+            if host in self._node_states:
+                #has digest about host, maybe update
+                if gossip["generation"] > self._node_states[host]["generation"]:
+                    self._update_node_state(host, digest)
+                elif gossip["version"] > self._node_states[host]["version"]: #should probably make sure that generations are eq
+                    self._update_node_state(host, digest)
+            else:
+                #had no previous info about host
+                print "new node discovered"
+                self._node_states[host] = digest
+                self._fd.heartbeat(host)
+                if host not in self._alive_nodes:   #could be gossip about seed which could already be in alive_nodes
+                    self._alive_nodes.append(host)
+                self._notify_on_join(host)
+
+    def _update_node_state(self, host, digest):
+        self._fd.heartbeat(host)
+        self._node_states[host] = digest
+        if host in self._dead_nodes:
+            self._dead_nodes.remove(host)
+            self._alive_nodes.append(host)
 
     def _notify_on_join(self, host):
         print "notifying node state change listeners, on_join(%s)" % host
@@ -79,7 +100,3 @@ class Gossiper(object):
     def _notify_on_dead(self, host):
         print "notifying node state change listeners, on_dead(%s)" % host
         [listener.on_dead(host) for listener in self._node_state_change_listeners]
-
-#    def _notify_on_restart(self, host):
-#        print "notifying node state change listeners, on_restart(%s)" % host
-#        [listener.on_restart(host) for listener in self._node_state_change_listeners]
