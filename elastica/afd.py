@@ -8,10 +8,13 @@ class AccrualFailureDetector(object):
     (Original version by Brandon Williams (github.com/driftx), modified by Roger Schildmeijer (github.com/rchildmeijer))
 
     Failure detection is the process of determining which nodes in a distributed fault-tolerant system have failed.
-    Original Phi Accrual Failure Detection paper: http://ddg.jaist.ac.jp/pub/HDY+04.pdf"""
+    Original Phi Accrual Failure Detection paper: http://ddg.jaist.ac.jp/pub/HDY+04.pdf
+
+    A low threshold is prone to generate many wrong suspicions but ensures a quick detection in the event of a real crash.
+    Conversely, a high threshold generates fewer mistakes but needs more time to detect actual crashes"""
 
     max_sample_size = 1000
-    threshold = 3 # 1 = 10% error rate, 2 = 1%, 3 = 0.1%.., (eg threshold=3. no heartbeat for >6s => node marked as dead
+    threshold = 1 # 1 = 10% error rate, 2 = 1%, 3 = 0.1%.., (eg threshold=3. no heartbeat for >6s => node marked as dead
 
     def __init__(self):
         self._intervals = {}
@@ -20,6 +23,7 @@ class AccrualFailureDetector(object):
 
     def heartbeat(self, host):
         """ Call when host has indicated being alive (aka heartbeat) """
+        print "heartbeat: %s" %host
         if not self._timestamps.has_key(host):
             self._timestamps[host] = time()
             self._intervals[host] = []

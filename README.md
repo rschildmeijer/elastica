@@ -12,3 +12,9 @@ Elastica is an implementation of:  [The Phi Accrual Failure Detector] and [Amazo
 
     * Concern: (theoretically) could end up with two connections to a single node.
       (hint: interleaved incoming/outcoming connections)
+
+
+    TODO
+
+    * Gossip stage 2 and stage 3
+    * deduce a sane cluster state when a new node joins the cluster (dead nodes > 0)
