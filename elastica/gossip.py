@@ -41,7 +41,7 @@ class Gossiper(object):
         if len(self._alive_nodes) > 0:
             gossiped_to_seed = self._send_gossip(self._alive_nodes)
 
-        if len(self._dead_nodes > 0):
+        if len(self._dead_nodes) > 0:
             probability = len(self._dead_nodes) / (len(self._alive_nodes) + 1)
             if random.random() < probability:
                 self._send_gossip(self._dead_nodes)
@@ -50,7 +50,7 @@ class Gossiper(object):
             # gossip to a seed for facilitating partition healing
             if options.seed == options.address: #size == 1 && seeds.contains(FBUtilities.getLocalAddress()
                 return
-            if len(self._alive_nodes == 0):
+            if len(self._alive_nodes) == 0:
                 self._send_gossip([options.seed]) 
             else:
                 probability = 1.0 / (len(self._alive_nodes) + len(self._dead_nodes))
