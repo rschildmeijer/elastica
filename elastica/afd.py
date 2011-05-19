@@ -23,7 +23,6 @@ class AccrualFailureDetector(object):
 
     def heartbeat(self, host):
         """ Call when host has indicated being alive (aka heartbeat) """
-        print "heartbeat: %s" %host
         if not self._timestamps.has_key(host):
             self._timestamps[host] = time()
             self._intervals[host] = []

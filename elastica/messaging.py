@@ -32,10 +32,8 @@ class MessagingService:
         self._socket.bind((options.address, options.port))
         self._socket.listen(128)    #backlog
         ioloop.IOLoop.instance().add_handler(self._socket.fileno(), self._handle_accept, ioloop.IOLoop.READ)
-        print "bind complete"
       
     def _handle_accept(self, fd, events):
-        print "_handle_accept"
         connection, address = self._socket.accept()
         host = address[0]
         stream = IOStream(connection)
@@ -47,16 +45,13 @@ class MessagingService:
         stream.read_until("\r\n", functools.partial(self._handle_read, host))
 
     def _handle_close(self, host):
-        print "_handle_close"
         self._streams.pop(host)
 
     def _handle_read(self, host, data):
-        print "_handle_read"
         self._gossiper.new_gossip(ast.literal_eval(data.rstrip()), host)
         self._streams[host].read_until("\r\n", functools.partial(self._handle_read, host))
 
     def _connect_to_node(self, host, data=None):
-        print "connecting to host: %s" % host
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
             sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
@@ -68,7 +63,7 @@ class MessagingService:
             if data:
                 stream.write(data)
         except socket.error, e:
-            print "socket.error"
+            print "could not connect"
 
     def send_one_way(self, to, gossip):
         if self._streams.has_key(to):
