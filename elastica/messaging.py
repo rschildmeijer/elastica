@@ -70,7 +70,7 @@ class MessagingService:
         except socket.error, e:
             print "socket.error"
 
-    def send_gossip(self, to, gossip):
+    def send_one_way(self, to, gossip):
         if self._streams.has_key(to):
             self._streams[to].write(gossip)
         else:

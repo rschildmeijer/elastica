@@ -37,15 +37,37 @@ class Gossiper(object):
         PeriodicCallback(self._scrutinize_cluster, 1000, ioloop.IOLoop.instance()).start()
 
     def _initiate_gossip_exchange(self):
+        gossiped_to_seed = False
         if len(self._alive_nodes) > 0:
-            node = random.choice(self._alive_nodes)
-            print "sending gossip [generation:%s, version:%s] to: %s" % (self._generation, self._version, node)
-            gossip = self._node_states.copy()
-            gossip[options.address] = {"generation": self._generation, "version": self._version}
-            self._ms.send_gossip(node, str(gossip) + "\r\n")
-            self._version +=1
-        #TODO gossip step 2
-        #TODO gossip step 3
+            gossiped_to_seed = self._send_gossip(self._alive_nodes)
+
+        if len(self._dead_nodes > 0):
+            probability = len(self._dead_nodes) / (len(self._alive_nodes) + 1)
+            if random.random() < probability:
+                self._send_gossip(self._dead_nodes)
+
+        if not gossiped_to_seed or len(self._alive_nodes) < 1:    #1 = len(self._seeds)
+            # gossip to a seed for facilitating partition healing
+            if options.seed == options.address: #size == 1 && seeds.contains(FBUtilities.getLocalAddress()
+                return
+            if len(self._alive_nodes == 0):
+                self._send_gossip([options.seed]) 
+            else:
+                probability = 1.0 / (len(self._alive_nodes) + len(self._dead_nodes))
+                if random.random() <= probability:
+                    self._send_gossip([options.seed])
+                    
+        self._version +=1
+
+
+    def _send_gossip(self, nodes):
+        """ Returns true if the chosen target was also a seed. False otherwise"""
+        node = random.choice(nodes)
+        print "sending gossip [generation:%s, version:%s] to: %s" % (self._generation, self._version, node)
+        gossip = self._node_states.copy()
+        gossip[options.address] = {"generation": self._generation, "version": self._version}
+        self._ms.send_one_way(node, str(gossip) + "\r\n")
+        return node == options.seed
 
     def _scrutinize_cluster(self):
         print "dead nodes: " + str(self._dead_nodes)

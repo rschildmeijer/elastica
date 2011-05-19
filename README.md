@@ -10,11 +10,14 @@ Elastica is an implementation of:  [The Phi Accrual Failure Detector] and [Amazo
 
     * One node per ip.
 
+    * Only support for one seed
+
     * Concern: (theoretically) could end up with two connections to a single node.
       (hint: interleaved incoming/outcoming connections)
 
 
     TODO
 
-    * Gossip stage 2 and stage 3
-    * deduce a sane cluster state when a new node joins the cluster (dead nodes > 0)
+    * Deduce a sane cluster state when a new node joins the cluster (dead nodes > 0)
+        solution: only gossip alive_nodes
+    * Use protobuf (http://code.google.com/apis/protocolbuffers/docs/pythontutorial.html) for messaging
