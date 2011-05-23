@@ -22,3 +22,6 @@ Elastica is an implementation of:  [The Phi Accrual Failure Detector] and [Amazo
         solution: only gossip alive_nodes
         reproduce: A alive, B dead and starting C. A sends gossip to C. C thinks A and B are alive.
     * Use protobuf (http://code.google.com/apis/protocolbuffers/docs/pythontutorial.html) for messaging
+
+
+Licensed under Apache version 2
