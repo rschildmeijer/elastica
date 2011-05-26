@@ -60,7 +60,7 @@ class AccrualFailureDetector(object):
             ts = time()
         diff = ts - self._timestamps[host]
         prob = self._probability(host, diff)
-        return -1 * math.log10(prob)
+        return -1 * math.log10(prob) #ValueError: math domain error
 
     def isAlive(self, host):
         return self.phi(host) < self.threshold

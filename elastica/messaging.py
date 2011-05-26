@@ -10,9 +10,9 @@ from tornado.options import define, options
 from afd import AccrualFailureDetector
 from gossip import Gossiper
 
-define("port", type=int, help="Port to bind for internal messaging", default=14922)
-define("address", type=str, help="Address to bind for internal messaging", default="192.168.0.199")
-define("seed", type=str, help="Seed for bootstrapping", default="192.168.0.199")
+#define("port", type=int, help="Internal messaging",default=14922)
+define("address", type=str, help="Internal messaging", default="192.168.0.199:14922")
+define("seed", type=str, help="For bootstrapping", default="192.168.0.199:14922")
 
 class MessagingService:
 
@@ -20,6 +20,7 @@ class MessagingService:
         self._fd = AccrualFailureDetector()
         self._gossiper = Gossiper(self._fd, self)
         self._streams = {}
+        self._seed=(options.seed.split(':'))
         self._bind()
 
     def _bind(self):
@@ -29,19 +30,19 @@ class MessagingService:
         fcntl.fcntl(self._socket.fileno(), fcntl.F_SETFD, flags)
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._socket.setblocking(0) #equivalent to s.settimeout(0.0);
-        self._socket.bind((options.address, options.port))
+        address = options.address.split(":")    #feels clumsy
+        self._socket.bind(tuple((address[0], int(address[1]))))
         self._socket.listen(128)    #backlog
         ioloop.IOLoop.instance().add_handler(self._socket.fileno(), self._handle_accept, ioloop.IOLoop.READ)
       
     def _handle_accept(self, fd, events):
         connection, address = self._socket.accept()
-        host = address[0]
         stream = IOStream(connection)
+        host = ":".join(str(i) for i in address)
         self._streams[host] = stream
 
         ccb = functools.partial(self._handle_close, host) #same as: cb =  lambda : self._handle_close(host)
         stream.set_close_callback(ccb)
-
         stream.read_until("\r\n", functools.partial(self._handle_read, host))
 
     def _handle_close(self, host):
@@ -50,23 +51,6 @@ class MessagingService:
     def _handle_read(self, host, data):
         self._gossiper.new_gossip(ast.literal_eval(data.rstrip()), host)
         self._streams[host].read_until("\r\n", functools.partial(self._handle_read, host))
-
-    """
-    def _connect_to_node(self, host, data=None):
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-            sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
-            sock.connect((host, options.port)) #TODO how to connect async?
-            stream = IOStream(sock, io_loop=ioloop.IOLoop.instance())
-            self._streams[host] = stream
-            stream.set_close_callback(functools.partial(self._handle_close, host))
-            self._streams[host].read_until("\r\n", functools.partial(self._handle_read, host))
-            if data:
-                stream.write(data)
-        except socket.error, e:
-            print "could not connect"
-
-    """
 
     def _connect_to_node(self, host, data=None):
         def on_connect(self):
@@ -77,11 +61,12 @@ class MessagingService:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
             sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
             stream = IOStream(sock)
-            stream.connect((host, options.port), on_connect)
+            print "connect to: %s" % host
+            stream.connect(tuple(host.split(':')), on_connect)
             self._streams[host] = stream
             stream.set_close_callback(functools.partial(self._handle_close, host))
         except socket.error, e:
-                print "could not connect"
+            print "could not connect"
 
 
 
