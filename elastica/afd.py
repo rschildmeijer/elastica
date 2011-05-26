@@ -14,7 +14,7 @@ class AccrualFailureDetector(object):
     Conversely, a high threshold generates fewer mistakes but needs more time to detect actual crashes"""
 
     max_sample_size = 1000
-    threshold = 2 # 1 = 10% error rate, 2 = 1%, 3 = 0.1%.., (eg threshold=3. no heartbeat for >6s => node marked as dead
+    threshold = 3 # 1 = 10% error rate, 2 = 1%, 3 = 0.1%.., (eg threshold=3. no heartbeat for >6s => node marked as dead
 
     def __init__(self):
         self._intervals = {}

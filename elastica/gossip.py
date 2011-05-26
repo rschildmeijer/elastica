@@ -40,7 +40,7 @@ class Gossiper(object):
             gossiped_to_seed = self._send_gossip(self._alive_nodes)
 
         if len(self._dead_nodes) > 0:
-            probability = len(self._dead_nodes) / (len(self._alive_nodes) + 1)
+            probability = float(len(self._dead_nodes)) / (len(self._alive_nodes) + 1)
             if random.random() < probability:
                 self._send_gossip(self._dead_nodes)
 
