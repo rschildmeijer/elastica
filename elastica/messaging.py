@@ -69,6 +69,10 @@ class MessagingService:
     """
 
     def _connect_to_node(self, host, data=None):
+        def on_connect(self):
+            self._streams[host].read_until("\r\n", functools.partial(self._handle_read, host))
+            if data:
+                stream.write(data)
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
             sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
@@ -77,12 +81,8 @@ class MessagingService:
             self._streams[host] = stream
             stream.set_close_callback(functools.partial(self._handle_close, host))
         except socket.error, e:
-            print "could not connect"
+                print "could not connect"
 
-    def on_connect(self):
-          self._streams[host].read_until("\r\n", functools.partial(self._handle_read, host))
-          if data:
-              stream.write(data)
 
 
     def send_one_way(self, to, gossip):
