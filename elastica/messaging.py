@@ -52,8 +52,9 @@ class MessagingService:
         self._gossiper.new_gossip(ast.literal_eval(data.rstrip()), host)
         self._streams[host].read_until("\r\n", functools.partial(self._handle_read, host))
 
+    """
     def _connect_to_node(self, host, data=None):
-        def on_connect(self):
+        def on_connect():
             self._streams[host].read_until("\r\n", functools.partial(self._handle_read, host))
             if data:
                 stream.write(data)
@@ -63,12 +64,25 @@ class MessagingService:
             stream = IOStream(sock)
             print "connect to: %s" % host
             address = host.split(':')
-            stream.connect(tuple(address[0], int(address[1])), on_connect)
+            stream.connect(tuple((address[0], int(address[1]))), on_connect)
             self._streams[host] = stream
             stream.set_close_callback(functools.partial(self._handle_close, host))
         except socket.error, e:
             print "could not connect"
-
+    """
+    def _connect_to_node(self, host, data=None):
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+            sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
+            sock.connect((host, options.port)) #TODO how to connect async?
+            stream = IOStream(sock, io_loop=ioloop.IOLoop.instance())
+            self._streams[host] = stream
+            stream.set_close_callback(functools.partial(self._handle_close, host))
+            self._streams[host].read_until("\r\n", functools.partial(self._handle_read, host))
+            if data:
+                stream.write(data)
+        except socket.error, e:
+            print "could not connect"
 
 
     def send_one_way(self, to, gossip):
