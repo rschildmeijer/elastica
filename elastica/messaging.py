@@ -11,8 +11,8 @@ from afd import AccrualFailureDetector
 from gossip import Gossiper
 
 define("port", type=int, help="Port to bind for internal messaging", default=14922)
-define("address", type=str, help="Address to bind for internal messaging", default="192.168.0.123")
-define("seed", type=str, help="Seed for bootstrapping", default="192.168.0.123")
+define("address", type=str, help="Address to bind for internal messaging", default="192.168.0.199")
+define("seed", type=str, help="Seed for bootstrapping", default="192.168.0.199")
 
 class MessagingService:
 
@@ -51,6 +51,7 @@ class MessagingService:
         self._gossiper.new_gossip(ast.literal_eval(data.rstrip()), host)
         self._streams[host].read_until("\r\n", functools.partial(self._handle_read, host))
 
+    """
     def _connect_to_node(self, host, data=None):
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
@@ -64,6 +65,25 @@ class MessagingService:
                 stream.write(data)
         except socket.error, e:
             print "could not connect"
+
+    """
+
+    def _connect_to_node(self, host, data=None):
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+            sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
+            stream = IOStream(sock)
+            stream.connect((host, options.port), on_connect)
+            self._streams[host] = stream
+            stream.set_close_callback(functools.partial(self._handle_close, host))
+        except socket.error, e:
+            print "could not connect"
+
+    def on_connect(self):
+          self._streams[host].read_until("\r\n", functools.partial(self._handle_read, host))
+          if data:
+              stream.write(data)
+
 
     def send_one_way(self, to, gossip):
         if self._streams.has_key(to):
