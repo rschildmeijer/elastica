@@ -62,7 +62,8 @@ class MessagingService:
             sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
             stream = IOStream(sock)
             print "connect to: %s" % host
-            stream.connect(tuple(host.split(':')), on_connect)
+            address = host.split(':')
+            stream.connect(tuple(address[0], int(address[1])), on_connect)
             self._streams[host] = stream
             stream.set_close_callback(functools.partial(self._handle_close, host))
         except socket.error, e:
