@@ -74,7 +74,8 @@ class MessagingService:
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
             sock.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
-            sock.connect((host, options.port)) #TODO how to connect async?
+            address = host.split(':')
+            sock.connect(tuple((address[0], int(address[1]))))
             stream = IOStream(sock, io_loop=ioloop.IOLoop.instance())
             self._streams[host] = stream
             stream.set_close_callback(functools.partial(self._handle_close, host))
