@@ -11,7 +11,7 @@ from afd import AccrualFailureDetector
 from gossip import Gossiper
 
 #define("port", type=int, help="Internal messaging",default=14922)
-define("address", type=str, help="Internal messaging", default="192.168.0.199:14922")
+define("address", type=str, help="Internal messaging", default="192.168.0.199:14923")
 define("seed", type=str, help="For bootstrapping", default="192.168.0.199:14922")
 
 class MessagingService:
@@ -30,15 +30,15 @@ class MessagingService:
         fcntl.fcntl(self._socket.fileno(), fcntl.F_SETFD, flags)
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._socket.setblocking(0) #equivalent to s.settimeout(0.0);
-        address = options.address.split(":")    #feels clumsy
-        self._socket.bind(tuple((address[0], int(address[1]))))
+        host, port = options.address.split(":")
+        self._socket.bind((host, int(port)))
         self._socket.listen(128)    #backlog
         ioloop.IOLoop.instance().add_handler(self._socket.fileno(), self._handle_accept, ioloop.IOLoop.READ)
       
     def _handle_accept(self, fd, events):
         connection, address = self._socket.accept()
         stream = IOStream(connection)
-        host = ":".join(str(i) for i in address)
+        host = "%s:%d" % address #host = ":".join(str(i) for i in address)
         self._streams[host] = stream
 
         ccb = functools.partial(self._handle_close, host) #same as: cb =  lambda : self._handle_close(host)
@@ -83,8 +83,7 @@ class MessagingService:
             if data:
                 stream.write(data)
         except socket.error, e:
-            print "could not connect"
-
+            a = 5
 
     def send_one_way(self, to, gossip):
         if self._streams.has_key(to):
