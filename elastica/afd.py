@@ -1,4 +1,5 @@
 from time import time
+from decimal import Decimal
 import math
 
 class AccrualFailureDetector(object):
@@ -60,7 +61,9 @@ class AccrualFailureDetector(object):
             ts = time()
         diff = ts - self._timestamps[host]
         prob = self._probability(host, diff)
-        return -1 * math.log10(prob) #ValueError: math domain error
+        if (Decimal(str(prob)).is_zero()):
+            prob = 1E-128 # a very small number, avoiding ValueError: math domain error
+        return -1 * math.log10(prob)
 
     def isAlive(self, host):
         return self.phi(host) < self.threshold
