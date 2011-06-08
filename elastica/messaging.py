@@ -11,8 +11,9 @@ from afd import AccrualFailureDetector
 from gossip import Gossiper
 
 #define("port", type=int, help="Internal messaging",default=14922)
-define("address", type=str, help="Internal messaging", default="192.168.0.199:14923")
-define("seed", type=str, help="For bootstrapping", default="192.168.0.199:14922")
+define("address", type=str, help="Internal messaging", default="85.235.31.253:14925")
+define("seed", type=str, help="For bootstrapping", default="85.235.31.253:14922")
+
 
 class MessagingService:
 
@@ -21,6 +22,7 @@ class MessagingService:
         self._gossiper = Gossiper(self._fd, self)
         self._streams = {}
         self._seed=(options.seed.split(':'))
+        self._verb_handlers = {} #Lookup table for registering message handlers based on the verb
         self._bind()
 
     def _bind(self):
@@ -31,10 +33,10 @@ class MessagingService:
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._socket.setblocking(0) #equivalent to s.settimeout(0.0);
         host, port = options.address.split(":")
-        self._socket.bind((host, int(port)))
+        self._socket.bind(("0.0.0.0", int(port)))
         self._socket.listen(128)    #backlog
         ioloop.IOLoop.instance().add_handler(self._socket.fileno(), self._handle_accept, ioloop.IOLoop.READ)
-      
+
     def _handle_accept(self, fd, events):
         connection, address = self._socket.accept()
         stream = IOStream(connection)
@@ -85,7 +87,12 @@ class MessagingService:
         except socket.error, e:
             a = 5
 
+    def register_verb_handler(self, verb, verb_handler):
+        self._verb_handlers[verb] = verb_handler
+
     def send_one_way(self, to, gossip):
+        # if to == options.address:
+        #    handle local delivery
         if self._streams.has_key(to):
             self._streams[to].write(gossip)
         else:

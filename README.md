@@ -17,6 +17,8 @@ Elastica is an implementation of:  [The Phi Accrual Failure Detector] and [Amazo
 
     TODO
 
+    * if generation changes (node restarted) invoke on_dead(..) and then on_alive(..)
+       so maintenance like resetting connection pools can occur.
     * Deduce a sane cluster state when a new node joins the cluster (dead nodes > 0)
         solution: only gossip alive_nodes
         reproduce: A alive, B dead and starting C. A sends gossip to C. C thinks A and B are alive.

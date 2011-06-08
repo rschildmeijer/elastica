@@ -87,8 +87,7 @@ class Gossiper(object):
                 #had no previous info about host
                 self._node_states[host] = digest
                 self._fd.heartbeat(host)
-                if host not in self._alive_nodes:   #could be gossip about seed which could already be in alive_nodes
-                    self._alive_nodes.append(host)
+                self._alive_nodes.append(host)
                 self._notify_on_join(host)
 
     def _update_node_state(self, host, digest):
@@ -102,8 +101,6 @@ class Gossiper(object):
     def _notify_on_join(self, host):
         print "on_join(%s)" % host
         [listener.on_join(host) for listener in self._node_state_change_listeners]
-        #for listener in self._node_state_change_listeners #better style?
-        #    listener.on_join(host)
 
     def _notify_on_alive(self, host):
         print "on_alive(%s)" % host
