@@ -66,7 +66,7 @@ class Gossiper(object):
     def _scrutinize_cluster(self):
         dead = [host for host in self._alive_nodes if self._fd.isDead(host)]
         if len(dead) > 0:
-            [self._dead_nodes.append(node) for node in dead]
+            [self._dead_nodes.append(node) for node in dead] #self._dead_nodes.extend(dead) is prettier or self._dead_nodes += dead
             [self._alive_nodes.remove(node) for node in dead]
             [self._notify_on_dead(node) for node in dead]
 
@@ -80,8 +80,16 @@ class Gossiper(object):
             if host in self._node_states:
                 #has digest about host, maybe update
                 if digest["generation"] > self._node_states[host]["generation"]:
+                    #node has restarted
+                    if (host in self._alive_nodes):
+                        # we haven't marked the restarted node as dead yet (fast restart maybe)
+                        # mark as dead so maintenance like resetting connection pools can occur
+                        self._alive_nodes.remove(host)
+                        self._dead_nodes.append(host)
+                        self._notify_on_dead(host)
                     self._update_node_state(host, digest)
-                elif digest["version"] > self._node_states[host]["version"]: #should probably make sure that generations are eq
+                elif digest["version"] > self._node_states[host]["version"] and \
+                     digest["generation"] == self._node_states[host]["generation"]:
                     self._update_node_state(host, digest)
             else:
                 #had no previous info about host
