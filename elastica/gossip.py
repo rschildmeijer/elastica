@@ -59,6 +59,8 @@ class Gossiper(object):
         """ Returns true if the chosen target was also a seed. False otherwise"""
         node = random.choice(nodes)
         gossip = self._node_states.copy()
+        #dont gossip about dead nodes
+        [gossip.pop(host) for host in self._dead_nodes]
         gossip[options.address] = {"generation": self._generation, "version": self._version}
         self._ms.send_one_way(node, str(gossip) + "\r\n")
         return node == options.seed

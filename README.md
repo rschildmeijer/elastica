@@ -16,10 +16,7 @@ Elastica is an implementation of:  [The Phi Accrual Failure Detector] and [Amazo
 
 
     TODO
-    * Deduce a sane cluster state when a new node joins the cluster (dead nodes > 0)
-       solution: only gossip alive_nodes
-       reproduce: A alive, B dead and starting C. A sends gossip to C. C thinks A and B are alive.
-    * Use protobuf (http://code.google.com/apis/protocolbuffers/docs/pythontutorial.html) for messaging
+    * Use protobuf (?) (http://code.google.com/apis/protocolbuffers/docs/pythontutorial.html) for messaging
     * Inconsistent implementation of 'cumulative distribution function' for Exponential Distribution  
        (see https://issues.apache.org/jira/browse/CASSANDRA-2597)
     * A generic Partitioner (keyspace=[0,10], A=[0,3], B=[4,7], C=[8,10]) (too key value specific?)
@@ -30,6 +27,7 @@ Elastica is an implementation of:  [The Phi Accrual Failure Detector] and [Amazo
                   - $1
        )
     * Reed–Solomon error correction (alternative to replication?): http://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction (proposed by github.com/williame)
-
+    * distinguish between "address I tell people about" and "address I bind to (think ec2, nat)
+      currently "solved" by binding to ip 0.0.0.0 and tell about "external" ip
 
 Licensed under Apache version 2
