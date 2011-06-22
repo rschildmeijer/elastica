@@ -23,26 +23,25 @@ class Gossiper(object):
     def __init__(self, fd, ms):
         self._fd = fd
         self._ms = ms
-        self._node_states = {}  #does not contain gossip digest about the local node
+        self._node_states = {options.address : {}}
         self._alive_nodes = []
         self._dead_nodes = []
         self._node_state_change_listeners = []  #on_join(host), on_alive(host), on_dead(host), on_change(host, name, old_value, new_value)
-        self._application_state_publishers = [] #name(), value()
-        self._application_state_versions = {"heartbeatstate" : 0}
-        self._generation = int(time.time())
+        self._application_state_publishers = [] #name(), value(), generation()
+        self._versions = {"heartbeatstate" : 0}
+        self._generation = int(time.time()) #heartbeatstate generation
 
         PeriodicCallback(self._initiate_gossip_exchange, 1000, ioloop.IOLoop.instance()).start()
         PeriodicCallback(self._scrutinize_cluster, 1000, ioloop.IOLoop.instance()).start()
 
     def _initiate_gossip_exchange(self):
-        for name in self._application_state_versions.keys():
-            self._application_state_versions[name] += 1
+        for name in self._versions.keys():
+            self._versions[name] += 1
         for publisher in self._application_state_publishers:
             key, value = publisher.value()
-            version = self._application_state_versions[publisher.name()]
-            if (options.address not in self._node_states):
-                self._node_states[options.address] = {}
-            self._node_states[options.address][publisher.name()] =  {key:value, "version" : version } 
+            version = self._versions[publisher.name()]
+            self._node_states[options.address][publisher.name()] =  \
+                {key:value, "generation" : publisher.generation(), "version" : version }
         gossiped_to_seed = False
         if len(self._alive_nodes) > 0:
             gossiped_to_seed = self._send_gossip(self._alive_nodes)
@@ -70,7 +69,7 @@ class Gossiper(object):
         #dont gossip about dead nodes
         [gossip.pop(host) for host in self._dead_nodes]
         gossip[options.address]["heartbeatstate"] = {"generation": self._generation,
-                                   "version": self._application_state_versions["heartbeatstate"]}
+                                   "version": self._versions["heartbeatstate"]}
         self._ms.send_one_way(node, str(gossip) + "\r\n")
         return node == options.seed
 
@@ -100,8 +99,12 @@ class Gossiper(object):
         #have previous application state gossip about host, maybe update
         keys = digest.keys()
         keys.remove("version") #to get the application state's key name (fragile!)
+        keys.remove("generation")
         old_value = self._node_states[host][name][keys[0]]
         new_value = digest[keys[0]]
+        if digest["generation"] > self._node_states[host][name]["generation"]:
+            #application state has restarted
+            self._update_node_state(host, name, digest)
         if digest["version"] > self._node_states[host][name]["version"]:
             self._update_node_state(host, name, digest)
         if old_value != new_value:
@@ -158,4 +161,4 @@ class Gossiper(object):
     def register_application_state_publisher(self, publisher):
         print "new application state publisher registered. name: %s, value: %s" % (publisher.name(), publisher.value())
         self._application_state_publishers.append(publisher)
-        self._application_state_versions[publisher.name()] = 0
+        self._versions[publisher.name()] = 0

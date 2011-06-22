@@ -103,12 +103,18 @@ class MessagingService:
 
 class DummyPublisher:
 
+    def __init__(self):
+        self._generation = int(time.time())
+
     def name(self):
         return "load-information"
 
     def value(self):
-        #return ("load", 1492)
-        return ("load", int(time.time()))
+        return ("load", 1492)
+        #return ("load", int(time.time()))
+
+    def generation(self):
+        return self._generation
 
 def main():
     tornado.options.parse_command_line()
