@@ -5,6 +5,7 @@ import fcntl
 import tornado.web
 import ast
 import time
+import psutil
 from tornado.iostream import IOStream
 from tornado.options import define, options
 
@@ -21,7 +22,8 @@ class MessagingService:
     def __init__(self):
         self._fd = AccrualFailureDetector()
         self._gossiper = Gossiper(self._fd, self)
-        self._gossiper.register_application_state_publisher(DummyPublisher()) #remove this line
+        #self._gossiper.register_application_state_publisher(PhysMemoryMonitor()) #remove this line
+        #self._gossiper.register_application_state_publisher(CPUUtilizationMonitor()) #remove this line
         self._streams = {}
         self._seed=(options.seed.split(':'))
         self._verb_handlers = {} #Lookup table for registering message handlers based on the verb
@@ -101,20 +103,36 @@ class MessagingService:
         else:
             self._connect_to_node(to, gossip)
 
-class DummyPublisher:
+class PhysMemoryMonitor:
 
     def __init__(self):
         self._generation = int(time.time())
 
     def name(self):
-        return "load-information"
+        return "available-phymem"
 
     def value(self):
-        return ("load", 1492)
+        return ("mem", psutil.avail_phymem()/1000000)
         #return ("load", int(time.time()))
 
     def generation(self):
         return self._generation
+
+class CPUUtilizationMonitor:
+
+    def __init__(self):
+        self._generation = int(time.time())
+
+    def name(self):
+        return "cpu-util"
+
+    def value(self):
+        return ("cpu", psutil.cpu_percent())
+        #return ("load", int(time.time()))
+
+    def generation(self):
+        return self._generation
+
 
 def main():
     tornado.options.parse_command_line()

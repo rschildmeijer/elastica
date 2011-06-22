@@ -29,6 +29,9 @@ Elastica is an implementation of:  [The Phi Accrual Failure Detector] and [Amazo
     * Reed–Solomon error correction (alternative to replication?): http://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction (proposed by github.com/williame)
     * Distinguish between "address I tell people about" and "address I bind to (think ec2, nat)
       currently "solved" by binding to ip 0.0.0.0 and tell about "external" ip
-    * Support for user-defined "gossip" (ApplicationState like cpu usage, memory usage, load, #connections etc)
+
+    Dependencies:
+    * Tornado 1.2.1 (http://www.tornadoweb.org/)
+    * psutil (http://code.google.com/p/psutil/)
 
 Licensed under Apache version 2
