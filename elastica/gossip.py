@@ -26,15 +26,23 @@ class Gossiper(object):
         self._node_states = {}  #does not contain gossip digest about the local node
         self._alive_nodes = []
         self._dead_nodes = []
-        self._node_state_change_listeners = []  #on_join(host), on_alive(host), on_dead(host)
+        self._node_state_change_listeners = []  #on_join(host), on_alive(host), on_dead(host), on_change(host, name, old_value, new_value)
+        self._application_state_publishers = [] #name(), value()
+        self._application_state_versions = {"heartbeatstate" : 0}
         self._generation = int(time.time())
-        self._version = 0
 
         PeriodicCallback(self._initiate_gossip_exchange, 1000, ioloop.IOLoop.instance()).start()
         PeriodicCallback(self._scrutinize_cluster, 1000, ioloop.IOLoop.instance()).start()
 
     def _initiate_gossip_exchange(self):
-        self._version += 1
+        for name in self._application_state_versions.keys():
+            self._application_state_versions[name] += 1
+        for publisher in self._application_state_publishers:
+            key, value = publisher.value()
+            version = self._application_state_versions[publisher.name()]
+            if (options.address not in self._node_states):
+                self._node_states[options.address] = {}
+            self._node_states[options.address][publisher.name()] =  {key:value, "version" : version } 
         gossiped_to_seed = False
         if len(self._alive_nodes) > 0:
             gossiped_to_seed = self._send_gossip(self._alive_nodes)
@@ -61,7 +69,8 @@ class Gossiper(object):
         gossip = self._node_states.copy()
         #dont gossip about dead nodes
         [gossip.pop(host) for host in self._dead_nodes]
-        gossip[options.address] = {"generation": self._generation, "version": self._version}
+        gossip[options.address]["heartbeatstate"] = {"generation": self._generation,
+                                   "version": self._application_state_versions["heartbeatstate"]}
         self._ms.send_one_way(node, str(gossip) + "\r\n")
         return node == options.seed
 
@@ -72,6 +81,33 @@ class Gossiper(object):
             [self._alive_nodes.remove(node) for node in dead]
             [self._notify_on_dead(node) for node in dead]
 
+    def _handle_new_heartbeatstate_gossip(self, digest, host):
+        #have previous heartbeat state gossip about host, maybe update
+        if digest["generation"] > self._node_states[host]["heartbeatstate"]["generation"]:
+            #node has restarted
+            if (host in self._alive_nodes):
+                # we haven't marked the restarted node as dead yet (fast restart maybe)
+                # mark as dead so maintenance like resetting connection pools can occur
+                self._alive_nodes.remove(host)
+                self._dead_nodes.append(host)
+                self._notify_on_dead(host)
+            self._update_node_state(host, "heartbeatstate", digest)
+        elif digest["version"] > self._node_states[host]["heartbeatstate"]["version"] and\
+             digest["generation"] == self._node_states[host]["heartbeatstate"]["generation"]:
+            self._update_node_state(host, "heartbeatstate", digest)
+
+    def _handle_new_application_state_gossip(self, name, digest, host):
+        #have previous application state gossip about host, maybe update
+        keys = digest.keys()
+        keys.remove("version") #to get the application state's key name (fragile!)
+        old_value = self._node_states[host][name][keys[0]]
+        new_value = digest[keys[0]]
+        if digest["version"] > self._node_states[host][name]["version"]:
+            self._update_node_state(host, name, digest)
+        if old_value != new_value:
+            self._notify_on_change(host, name, old_value, new_value)
+
+
     def new_gossip(self, gossip, sender):
         """ Invoked by the MessagingService when we receive gossip from another node in the cluster """
         #gossip will contain info about me
@@ -80,19 +116,11 @@ class Gossiper(object):
         for host in gossip.keys():
             digest = gossip[host]
             if host in self._node_states:
-                #has digest about host, maybe update
-                if digest["generation"] > self._node_states[host]["generation"]:
-                    #node has restarted
-                    if (host in self._alive_nodes):
-                        # we haven't marked the restarted node as dead yet (fast restart maybe)
-                        # mark as dead so maintenance like resetting connection pools can occur
-                        self._alive_nodes.remove(host)
-                        self._dead_nodes.append(host)
-                        self._notify_on_dead(host)
-                    self._update_node_state(host, digest)
-                elif digest["version"] > self._node_states[host]["version"] and \
-                     digest["generation"] == self._node_states[host]["generation"]:
-                    self._update_node_state(host, digest)
+                for name in digest.keys():
+                    if name == "heartbeatstate":
+                        self._handle_new_heartbeatstate_gossip(digest["heartbeatstate"], host)
+                    else:
+                        self._handle_new_application_state_gossip(name, digest[name], host)
             else:
                 #had no previous info about host
                 self._node_states[host] = digest
@@ -100,10 +128,11 @@ class Gossiper(object):
                 self._alive_nodes.append(host)
                 self._notify_on_join(host)
 
-    def _update_node_state(self, host, digest):
-        self._fd.heartbeat(host)
-        self._node_states[host] = digest
-        if host in self._dead_nodes:
+    def _update_node_state(self, host, name,  digest):
+        if name == "heartbeatstate":
+            self._fd.heartbeat(host)
+        self._node_states[host][name] = digest
+        if host in self._dead_nodes and name == "heartbeatstate":
             self._dead_nodes.remove(host)
             self._alive_nodes.append(host)
             self._notify_on_alive(host)
@@ -119,3 +148,14 @@ class Gossiper(object):
     def _notify_on_dead(self, host):
         print "on_dead(%s)" % host
         [listener.on_dead(host) for listener in self._node_state_change_listeners]
+
+    def _notify_on_change(self, host, name, old_value, new_value):
+        print "on_change(host: %s, name: %s, old_value: %s, new_value: %s)" % \
+              (host, name, old_value, new_value)
+        [listener.on_change(host, name, old_value, new_value)
+         for listener in self._node_state_change_listeners]
+
+    def register_application_state_publisher(self, publisher):
+        print "new application state publisher registered. name: %s, value: %s" % (publisher.name(), publisher.value())
+        self._application_state_publishers.append(publisher)
+        self._application_state_versions[publisher.name()] = 0

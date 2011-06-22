@@ -4,6 +4,7 @@ import functools
 import fcntl
 import tornado.web
 import ast
+import time
 from tornado.iostream import IOStream
 from tornado.options import define, options
 
@@ -11,7 +12,7 @@ from afd import AccrualFailureDetector
 from gossip import Gossiper
 
 #define("port", type=int, help="Internal messaging",default=14922)
-define("address", type=str, help="Internal messaging", default="85.235.31.253:14925")
+define("address", type=str, help="Internal messaging", default="85.235.31.253:14923")
 define("seed", type=str, help="For bootstrapping", default="85.235.31.253:14922")
 
 
@@ -20,6 +21,7 @@ class MessagingService:
     def __init__(self):
         self._fd = AccrualFailureDetector()
         self._gossiper = Gossiper(self._fd, self)
+        self._gossiper.register_application_state_publisher(DummyPublisher()) #remove this line
         self._streams = {}
         self._seed=(options.seed.split(':'))
         self._verb_handlers = {} #Lookup table for registering message handlers based on the verb
@@ -48,6 +50,7 @@ class MessagingService:
         stream.read_until("\r\n", functools.partial(self._handle_read, host))
 
     def _handle_close(self, host):
+        print "handle close"
         self._streams.pop(host)
 
     def _handle_read(self, host, data):
@@ -97,6 +100,15 @@ class MessagingService:
             self._streams[to].write(gossip)
         else:
             self._connect_to_node(to, gossip)
+
+class DummyPublisher:
+
+    def name(self):
+        return "load-information"
+
+    def value(self):
+        #return ("load", 1492)
+        return ("load", int(time.time()))
 
 def main():
     tornado.options.parse_command_line()

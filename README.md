@@ -16,7 +16,7 @@ Elastica is an implementation of:  [The Phi Accrual Failure Detector] and [Amazo
 
 
     TODO
-    * Use protobuf (?) (http://code.google.com/apis/protocolbuffers/docs/pythontutorial.html) for messaging
+    * Simple rpc/messaging mechanism
     * Inconsistent implementation of 'cumulative distribution function' for Exponential Distribution  
        (see https://issues.apache.org/jira/browse/CASSANDRA-2597)
     * A generic Partitioner (keyspace=[0,10], A=[0,3], B=[4,7], C=[8,10]) (too key value specific?)
@@ -27,7 +27,8 @@ Elastica is an implementation of:  [The Phi Accrual Failure Detector] and [Amazo
                   - $1
        )
     * Reed–Solomon error correction (alternative to replication?): http://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction (proposed by github.com/williame)
-    * distinguish between "address I tell people about" and "address I bind to (think ec2, nat)
+    * Distinguish between "address I tell people about" and "address I bind to (think ec2, nat)
       currently "solved" by binding to ip 0.0.0.0 and tell about "external" ip
+    * Support for user-defined "gossip" (ApplicationState like cpu usage, memory usage, load, #connections etc)
 
 Licensed under Apache version 2
