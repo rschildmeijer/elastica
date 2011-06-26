@@ -3,11 +3,12 @@ Elastica is an implementation of:  [The Phi Accrual Failure Detector] and [Amazo
 [The Phi Accrual Failure Detector]: http://ddg.jaist.ac.jp/pub/HDY+04.pdf 
 [Amazons paper on Gossip]: http://www.cs.cornell.edu/home/rvr/papers/flowgossip.pdf
 
-    Suitable for you if you are building a system that is...
+    Suitable if you are building a system that is...
     * Elastic  -- Add new machines in runtime (with no downtime)
     * Decentralized  -- Every node in the cluster is identical.  
     * Fault tolerant  -- Replace failed nodes with no downtime. 
-
+    * Self-stabilizing  -- The system will end up in a correct state no matter what state it is initialized with.
+    
     Limitations:
     
     * No way to explicitly decomission a node
