@@ -102,12 +102,15 @@ class Gossiper(object):
         keys.remove("generation")
         old_value = self._node_states[host][name][keys[0]]
         new_value = digest[keys[0]]
+        notify = False
         if digest["generation"] > self._node_states[host][name]["generation"]:
             #application state has restarted
             self._update_node_state(host, name, digest)
+            notify = True
         if digest["version"] > self._node_states[host][name]["version"]:
             self._update_node_state(host, name, digest)
-        if old_value != new_value:
+            notify = True
+        if notify and old_value != new_value:
             self._notify_on_change(host, name, old_value, new_value)
 
 
