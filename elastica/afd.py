@@ -33,8 +33,8 @@ class AccrualFailureDetector(object):
             interval = now - self._timestamps[host]
             self._timestamps[host] = now
             self._intervals[host].append(interval)
-            if len(self._intervals) > self.max_sample_size:
-                self._intervals.pop(0)
+            if len(self._intervals[host]) > self.max_sample_size:
+                self._intervals[host].pop(0)
             if len(self._intervals[host]) > 1:
                 self._hosts[host]['mean'] = sum(self._intervals[host]) / float(len(self._intervals[host]))
                 ### lines below commented because deviation and variance are currently unused
