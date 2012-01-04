@@ -3,7 +3,7 @@ Elastica is an implementation of:  [The Phi Accrual Failure Detector] and [Amazo
 
 [The Phi Accrual Failure Detector]: http://ddg.jaist.ac.jp/pub/HDY+04.pdf 
 [Amazons paper on Gossip]: http://www.cs.cornell.edu/home/rvr/papers/flowgossip.pdf
-[Lookup data in p2p system] http://www.google.se/url?sa=t&rct=j&q=lookup%20in%20p2p%20system%20&source=web&cd=3&ved=0CDkQFjAC&url=http%3A%2F%2Fwww.cs.berkeley.edu%2F~istoica%2Fpapers%2F2003%2Fcacm03.pdf&ei=PcUET4GgJY6K4gSnlcSNCA&usg=AFQjCNFD1N8Y7VrxHhwDoKFaTNfO32wG9A&cad=rja
+[Lookup data in p2p system]: http://www.google.se/url?sa=t&rct=j&q=lookup%20in%20p2p%20system%20&source=web&cd=3&ved=0CDkQFjAC&url=http%3A%2F%2Fwww.cs.berkeley.edu%2F~istoica%2Fpapers%2F2003%2Fcacm03.pdf&ei=PcUET4GgJY6K4gSnlcSNCA&usg=AFQjCNFD1N8Y7VrxHhwDoKFaTNfO32wG9A&cad=rja
 
     Suitable if you are building a system that is...
     * Elastic  -- Add new machines in runtime (with no downtime)
