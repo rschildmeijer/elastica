@@ -1,5 +1,7 @@
 Elastica is an implementation of:  [The Phi Accrual Failure Detector] and [Amazons paper on Gossip] with inspiration from
-[Lookup data in p2p system] (A tweaked Chord implementation where |finger table| = |cluster|)
+[Lookup data in p2p system]
+
+(A tweaked Chord (DHT) implementation where |finger table| = |cluster|)
 
 [The Phi Accrual Failure Detector]: http://ddg.jaist.ac.jp/pub/HDY+04.pdf 
 [Amazons paper on Gossip]: http://www.cs.cornell.edu/home/rvr/papers/flowgossip.pdf
